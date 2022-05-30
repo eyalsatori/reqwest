@@ -416,6 +416,40 @@ impl ClientBuilder {
         self.with_inner(|inner| inner.http1_allow_obsolete_multiline_headers_in_responses(value))
     }
 
+        /// Sets whether invalid header lines should be silently ignored in responses.
+    ///
+    /// This mimicks the behaviour of major browsers. You probably don't want this.
+    /// You should only want this if you are implementing a proxy whose main
+    /// purpose is to sit in front of browsers whose users access arbitrary content
+    /// which may be malformed, and they expect everything that works without
+    /// the proxy to keep working with the proxy.
+    ///
+    /// This option will prevent `ParserConfig::parse_response` from returning
+    /// an error encountered when parsing a header, except if the error was caused
+    /// by the character NUL (ASCII code 0), as Chrome specifically always reject
+    /// those, or if the error was caused by a lone character `\r`, as Firefox and
+    /// Chrome behave differently in that case.
+    ///
+    /// The ignorable errors are:
+    /// * empty header names;
+    /// * characters that are not allowed in header names, except for `\0` and `\r`;
+    /// * when `allow_spaces_after_header_name_in_responses` is not enabled,
+    ///   spaces and tabs between the header name and the colon;
+    /// * missing colon between header name and value;
+    /// * when `allow_obsolete_multiline_headers_in_responses` is not enabled,
+    ///   headers using obsolete line folding.
+    /// * characters that are not allowed in header values except for `\0` and `\r`.
+    ///
+    /// If an ignorable error is encountered, the parser tries to find the next
+    /// line in the input to resume parsing the rest of the headers. As lines
+    /// contributing to a header using obsolete line folding always start
+    /// with whitespace, those will be ignored too. An error will be emitted
+    /// nonetheless if it finds `\0` or a lone `\r` while looking for the
+    /// next line.
+    pub fn http1_ignore_invalid_headers_in_responses(self, value: bool) -> ClientBuilder {
+        self.with_inner(|inner| inner.http1_ignore_invalid_headers_in_responses(value))
+    }
+
     /// Only use HTTP/1.
     pub fn http1_only(self) -> ClientBuilder {
         self.with_inner(|inner| inner.http1_only())

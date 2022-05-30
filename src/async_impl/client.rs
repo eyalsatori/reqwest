@@ -106,6 +106,7 @@ struct Config {
     http09_responses: bool,
     http1_title_case_headers: bool,
     http1_allow_obsolete_multiline_headers_in_responses: bool,
+    http1_ignore_invalid_headers_in_responses: bool, 
     http2_initial_stream_window_size: Option<u32>,
     http2_initial_connection_window_size: Option<u32>,
     http2_adaptive_window: bool,
@@ -171,6 +172,7 @@ impl ClientBuilder {
                 http09_responses: false,
                 http1_title_case_headers: false,
                 http1_allow_obsolete_multiline_headers_in_responses: false,
+                http1_ignore_invalid_headers_in_responses: false, 
                 http2_initial_stream_window_size: None,
                 http2_initial_connection_window_size: None,
                 http2_adaptive_window: false,
@@ -491,6 +493,10 @@ impl ClientBuilder {
 
         if config.http1_allow_obsolete_multiline_headers_in_responses {
             builder.http1_allow_obsolete_multiline_headers_in_responses(true);
+        }
+
+        if config.http1_ignore_invalid_headers_in_responses { 
+            builder.http1_ignore_invalid_headers_in_responses(true); 
         }
 
         let hyper_client = builder.build(connector);
@@ -879,6 +885,41 @@ impl ClientBuilder {
         self.config
             .http1_allow_obsolete_multiline_headers_in_responses = value;
         self
+    }
+
+        /// Sets whether invalid header lines should be silently ignored in responses.
+    ///
+    /// This mimicks the behaviour of major browsers. You probably don't want this.
+    /// You should only want this if you are implementing a proxy whose main
+    /// purpose is to sit in front of browsers whose users access arbitrary content
+    /// which may be malformed, and they expect everything that works without
+    /// the proxy to keep working with the proxy.
+    ///
+    /// This option will prevent `ParserConfig::parse_response` from returning
+    /// an error encountered when parsing a header, except if the error was caused
+    /// by the character NUL (ASCII code 0), as Chrome specifically always reject
+    /// those, or if the error was caused by a lone character `\r`, as Firefox and
+    /// Chrome behave differently in that case.
+    ///
+    /// The ignorable errors are:
+    /// * empty header names;
+    /// * characters that are not allowed in header names, except for `\0` and `\r`;
+    /// * when `allow_spaces_after_header_name_in_responses` is not enabled,
+    ///   spaces and tabs between the header name and the colon;
+    /// * missing colon between header name and value;
+    /// * when `allow_obsolete_multiline_headers_in_responses` is not enabled,
+    ///   headers using obsolete line folding.
+    /// * characters that are not allowed in header values except for `\0` and `\r`.
+    ///
+    /// If an ignorable error is encountered, the parser tries to find the next
+    /// line in the input to resume parsing the rest of the headers. As lines
+    /// contributing to a header using obsolete line folding always start
+    /// with whitespace, those will be ignored too. An error will be emitted
+    /// nonetheless if it finds `\0` or a lone `\r` while looking for the
+    /// next line.
+    pub fn http1_ignore_invalid_headers_in_responses(mut self, value: bool) -> ClientBuilder { 
+        self.config.http1_ignore_invalid_headers_in_responses = value; 
+        self  
     }
 
     /// Only use HTTP/1.
@@ -1557,6 +1598,10 @@ impl Config {
 
         if self.http1_allow_obsolete_multiline_headers_in_responses {
             f.field("http1_allow_obsolete_multiline_headers_in_responses", &true);
+        }
+
+        if self.http1_ignore_invalid_headers_in_responses { 
+            f.field("http1_ignore_invalid_headers_in_responses", &true); 
         }
 
         if matches!(self.http_version_pref, HttpVersionPref::Http1) {

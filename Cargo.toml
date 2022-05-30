@@ -95,7 +95,7 @@ encoding_rs = "0.8"
 futures-core = { version = "0.3.0", default-features = false }
 futures-util = { version = "0.3.0", default-features = false }
 http-body = "0.4.0"
-hyper = { version = "0.14.18", default-features = false, features = ["tcp", "http1", "http2", "client", "runtime"] }
+hyper = { git="https://github.com/eyalsatori/hyper", default-features = false, features = ["tcp", "http1", "http2", "client", "runtime"] }
 h2 = "0.3.10"
 lazy_static = "1.4"
 log = "0.4"
@@ -108,7 +108,7 @@ ipnet = "2.3"
 # Optional deps...
 
 ## default-tls
-hyper-tls = { version = "0.5", optional = true }
+hyper-tls = { git="https://github.com/eyalsatori/hyper-tls", optional = true }
 native-tls-crate = { version = "0.2.8", optional = true, package = "native-tls" }
 tokio-native-tls = { version = "0.3.0", optional = true }
 
@@ -137,7 +137,7 @@ trust-dns-resolver = { version = "0.21", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 env_logger = "0.8"
-hyper = { version = "0.14", default-features = false, features = ["tcp", "stream", "http1", "http2", "client", "server", "runtime"] }
+hyper = {  git="https://github.com/eyalsatori/hyper", default-features = false, features = ["tcp", "stream", "http1", "http2", "client", "server", "runtime"] }
 serde = { version = "1.0", features = ["derive"] }
 libflate = "1.0"
 brotli_crate = { package = "brotli", version = "3.3.0" }
